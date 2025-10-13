@@ -138,6 +138,10 @@ class OpenEvolve:
             if not self.file_extension.startswith("."):
                 self.file_extension = f".{self.file_extension}"
 
+        # Set the file_suffix in config (can be overridden in YAML)
+        if not hasattr(self.config, 'file_suffix') or self.config.file_suffix == ".py":
+            self.config.file_suffix = self.file_extension
+
         # Initialize components
         self.llm_ensemble = LLMEnsemble(self.config.llm.models)
         self.llm_evaluator_ensemble = LLMEnsemble(self.config.llm.evaluator_models)
@@ -150,6 +154,7 @@ class OpenEvolve:
         if self.config.random_seed is not None:
             self.config.database.random_seed = self.config.random_seed
 
+        self.config.database.novelty_llm = self.llm_ensemble
         self.database = ProgramDatabase(self.config.database)
 
         self.evaluator = Evaluator(
@@ -300,7 +305,8 @@ class OpenEvolve:
         # Initialize improved parallel processing
         try:
             self.parallel_controller = ProcessParallelController(
-                self.config, self.evaluation_file, self.database, self.evolution_tracer
+                self.config, self.evaluation_file, self.database, self.evolution_tracer,
+                file_suffix=self.config.file_suffix
             )
 
             # Set up signal handlers for graceful shutdown
